@@ -1,3 +1,11 @@
+"""
+===========================
+BulletManager.py
+A file which contains the firing sequence and control of the players bullets
+===========================
+"""
+
+
 from bullet import Bullet
 
 

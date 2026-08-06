@@ -1,3 +1,11 @@
+"""
+============================
+LeaderboardManager.py
+Controls the leaderboard, including submitting scores and retrieving top scores
+============================
+"""
+
+
 import asyncio
 import json
 import urllib.request

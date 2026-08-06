@@ -1,3 +1,11 @@
+"""
+==========================
+soundmanager.py
+Manages the sound effects in the game, including shooting, invader death, and player damage sounds.
+==========================
+"""
+
+
 import os
 
 import pygame

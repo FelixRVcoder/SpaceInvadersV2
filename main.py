@@ -1,3 +1,11 @@
+"""
+=========================
+main.py
+The main entry point for the Space Invader game. Initializes the game, handles the main loop, and manages transitions between different game states.
+=========================
+"""
+
+
 import asyncio
 import pygame
 from game import Game

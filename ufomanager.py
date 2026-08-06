@@ -1,3 +1,11 @@
+"""
+============================
+ufoManager.py
+Manages the UFO object in the game, including its spawning, movement, and destruction.
+============================
+"""
+
+
 import random
 import pygame
 

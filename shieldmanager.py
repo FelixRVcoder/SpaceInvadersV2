@@ -1,3 +1,11 @@
+"""
+===========================
+shieldmanager.py
+Manages the shield objects in the game, including their creation, rendering, and collision detection with bullets.
+===========================
+"""
+
+
 from shield import Shield
 
 from settings import *

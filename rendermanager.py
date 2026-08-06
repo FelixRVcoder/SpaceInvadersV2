@@ -1,3 +1,11 @@
+"""
+=========================
+RenderManager.py
+Handles the rendering of all game elements, including the player, invaders, bullets, shields, and score display
+=========================
+"""
+
+
 import pygame
 
 from settings import *

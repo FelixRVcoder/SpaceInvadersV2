@@ -1,3 +1,11 @@
+"""
+============================
+LeaderboardScreen.py
+Displays the leaderboard screen with top scores and player stats
+============================ 
+"""
+
+
 import pygame
 
 from settings import *

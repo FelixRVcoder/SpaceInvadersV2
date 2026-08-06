@@ -1,3 +1,11 @@
+"""
+==========================
+MenuManager.py
+Manages the game menu, including player name input and navigation|
+==========================
+"""
+
+
 import pygame
 
 from settings import *

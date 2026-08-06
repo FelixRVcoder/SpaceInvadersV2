@@ -1,3 +1,9 @@
+"""
+==========================
+shield.py
+Manages the shield objects in the game, including their creation, rendering, and collision detection with bullets.
+==========================
+"""
 import pygame
 
 from settings import *

@@ -1,3 +1,10 @@
+"""
+===============================
+Invader.py
+Contains the image of the invader and its states
+===============================
+"""
+
 import os
 
 import pygame

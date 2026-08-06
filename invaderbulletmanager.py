@@ -1,3 +1,11 @@
+"""
+===============================
+InvaderBulletManager.py
+A file which contains the firing sequence and control of the invaders bullets
+===============================
+"""
+
+
 import random
 
 from invaderbullet import InvaderBullet

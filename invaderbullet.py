@@ -1,3 +1,11 @@
+"""
+========================================
+InvaderBullet.py
+Contains the image of the invader bullet and its states
+========================================
+"""
+
+
 import pygame
 
 from settings import *

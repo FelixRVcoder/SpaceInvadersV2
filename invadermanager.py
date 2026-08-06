@@ -1,3 +1,11 @@
+"""
+========================================
+InvaderManager.py
+Manages the invaders, their movement, and their formation
+========================================
+"""
+
+
 from invader import Invader
 from settings import *
 

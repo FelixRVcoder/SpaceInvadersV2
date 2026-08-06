@@ -1,3 +1,11 @@
+"""
+============================
+LevelManager.py
+Manages the game levels, including progression and difficulty scaling
+============================
+"""
+
+
 class LevelManager:
 
     def __init__(self, invader_manager):

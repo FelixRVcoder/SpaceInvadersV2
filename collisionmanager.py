@@ -1,3 +1,11 @@
+"""
+============================
+CollisionManager.py
+A file which contains the collision logic for the game
+============================
+"""
+
+
 class CollisionManager:
 
 

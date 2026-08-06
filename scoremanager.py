@@ -1,3 +1,11 @@
+"""
+==========================
+ScoreManager.py
+Manages the player's score, including updating and displaying it on the screen
+==========================
+"""
+
+
 import pygame
 
 from settings import *

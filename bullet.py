@@ -1,3 +1,13 @@
+"""
+==========================
+Bullet.py
+A file which contains the bullets form and states
+DOES NOT CONTROL COLLISIONS OR FIRING, ONLY THE BULLET ITSELF
+==========================
+"""
+
+
+
 import pygame
 
 from settings import *

@@ -1,3 +1,11 @@
+"""
+=========================
+LoseManager.py
+Manages the game over state and displays the game over screen
+=========================
+"""
+
+
 import pygame
 
 from settings import *

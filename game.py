@@ -1,3 +1,11 @@
+"""
+===========================
+Game.py
+A file which contains the main game loop and logic
+===========================
+"""
+
+
 import pygame
 
 from settings import *
