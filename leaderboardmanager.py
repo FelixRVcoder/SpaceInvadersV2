@@ -42,6 +42,23 @@ class LeaderboardManager:
             sys.platform == "emscripten"
         )
 
+    def _web_url(self, url):
+
+        separator = "&" if "?" in url else "?"
+
+        return (
+            url
+            +
+            separator
+            +
+            "apikey="
+            +
+            urllib.parse.quote(
+                SUPABASE_KEY,
+                safe=""
+            )
+        )
+
     async def request(
         self,
         method,
@@ -83,25 +100,29 @@ class LeaderboardManager:
 
             import platform
 
+            web_url = self._web_url(
+                full_url
+            )
+
             await asyncio.sleep(0)
 
-            # ---------------------------------
+            # --------------------------------
             # GET
-            # ---------------------------------
+            # --------------------------------
 
             if method == "GET":
 
                 result = await platform.jsiter(
 
                     platform.window.Fetch.GET(
-                        full_url
+                        web_url
                     )
 
                 )
 
-            # ---------------------------------
+            # --------------------------------
             # POST
-            # ---------------------------------
+            # --------------------------------
 
             elif method == "POST":
 
@@ -114,41 +135,39 @@ class LeaderboardManager:
                 result = await platform.jsiter(
 
                     platform.window.Fetch.POST(
-                        full_url,
+                        web_url,
                         payload
                     )
 
                 )
 
-            # ---------------------------------
+            # --------------------------------
             # PATCH
-            # ---------------------------------
+            # --------------------------------
 
-            else:
-
-                # The pygbag Fetch helper exposes
-                # GET and POST directly. For PATCH,
-                # use the browser's native fetch API.
+            elif method == "PATCH":
 
                 options = {
 
                     "method":
-                    method,
+                    "PATCH",
 
                     "headers":
                     self.headers,
 
                     "body":
-                    json.dumps(data)
-                    if data is not None
-                    else None
+                    json.dumps(
+                        data
+                        if data is not None
+                        else {}
+                    )
 
                 }
 
                 result = await platform.jsiter(
 
                     platform.window.fetch(
-                        full_url,
+                        web_url,
                         options
                     )
 
@@ -163,6 +182,13 @@ class LeaderboardManager:
                 except Exception:
 
                     pass
+
+            else:
+
+                raise Exception(
+                    "Unsupported HTTP method: "
+                    + method
+                )
 
             self.last_error = None
 
