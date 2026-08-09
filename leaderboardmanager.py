@@ -3,7 +3,7 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
-from datetime import datetime, timezone
+from datetime import datetime
 
 from settings import *
 
@@ -12,38 +12,26 @@ class LeaderboardManager:
 
     def __init__(self):
 
-        self.url = (
-            SUPABASE_URL
+        self.base_url = (
+            SUPABASE_URL.rstrip("/")
             + "/rest/v1/leaderboard"
         )
 
-        self.headers = {
-            "apikey": SUPABASE_KEY,
-
-            "Authorization":
-            "Bearer " + SUPABASE_KEY,
-
-            "Content-Type":
-            "application/json",
-
-            "Accept":
-            "application/json"
-        }
-
-        # Diagnostic information
         self.last_status = None
         self.last_response = None
         self.last_error = None
 
+        print("")
         print("========================================")
-        print("LEADERBOARD MANAGER INITIALIZED")
+        print("LEADERBOARD MANAGER")
+        print("========================================")
         print("Supabase URL:", SUPABASE_URL)
-        print("Leaderboard URL:", self.url)
+        print("Table URL:", self.base_url)
         print("========================================")
 
 
     # ============================================================
-    # GENERIC ASYNC REQUEST
+    # ASYNC REQUEST
     # ============================================================
 
     async def request(
@@ -53,46 +41,80 @@ class LeaderboardManager:
         params=""
     ):
 
-        full_url = self.url + params
-
-        print("")
-        print("========================================")
-        print("SUPABASE REQUEST")
-        print("Method:", method)
-        print("URL:", full_url)
-
-        if data is not None:
-            print("Data:", json.dumps(data, indent=4))
-
-        print("========================================")
-
         return await asyncio.to_thread(
-            self._request_urllib,
-            full_url,
+            self._request,
             method,
-            data
+            data,
+            params
         )
 
 
     # ============================================================
-    # SYNCHRONOUS HTTP REQUEST
-    # Runs inside asyncio.to_thread()
+    # ACTUAL HTTP REQUEST
     # ============================================================
 
-    def _request_urllib(
+    def _request(
         self,
-        full_url,
         method,
-        data=None
+        data=None,
+        params=""
     ):
 
         try:
 
-            headers = dict(self.headers)
+            # ----------------------------------------------------
+            # IMPORTANT:
+            #
+            # We put the API key in the URL because your previous
+            # successful Pygbag request showed that this works.
+            # ----------------------------------------------------
 
-            # Supabase should return the created/updated row.
-            if method in ("POST", "PATCH"):
-                headers["Prefer"] = "return=representation"
+            separator = "&" if "?" in params else "?"
+
+            url = (
+                self.base_url
+                + params
+                + separator
+                + "apikey="
+                + urllib.parse.quote(
+                    SUPABASE_KEY,
+                    safe=""
+                )
+            )
+
+            print("")
+            print("========================================")
+            print("SUPABASE REQUEST")
+            print("METHOD:", method)
+            print("URL:", url)
+
+            if data is not None:
+
+                print(
+                    "DATA:",
+                    json.dumps(
+                        data,
+                        indent=4
+                    )
+                )
+
+            print("========================================")
+
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+
+            # ----------------------------------------------------
+            # Authorization
+            #
+            # Keep it as Bearer as well. The URL apikey is the
+            # important part for our Pygbag test.
+            # ----------------------------------------------------
+
+            headers["Authorization"] = (
+                "Bearer " + SUPABASE_KEY
+            )
 
             body = None
 
@@ -103,10 +125,10 @@ class LeaderboardManager:
                 ).encode("utf-8")
 
             request = urllib.request.Request(
-                full_url,
+                url,
                 data=body,
-                method=method,
-                headers=headers
+                headers=headers,
+                method=method
             )
 
             with urllib.request.urlopen(
@@ -126,8 +148,8 @@ class LeaderboardManager:
             print("")
             print("========================================")
             print("SUPABASE RESPONSE")
-            print("Status:", status)
-            print("Raw response:", raw)
+            print("STATUS:", status)
+            print("BODY:", raw)
             print("========================================")
 
             if not raw:
@@ -138,161 +160,62 @@ class LeaderboardManager:
 
             try:
 
-                parsed = json.loads(raw)
+                result = json.loads(raw)
 
             except json.JSONDecodeError:
 
-                parsed = raw
+                result = raw
 
-            self.last_response = parsed
+            self.last_response = result
 
-            return parsed
+            return result
 
 
         except urllib.error.HTTPError as error:
 
             try:
+
                 body = error.read().decode(
                     "utf-8"
                 )
+
             except Exception:
+
                 body = ""
 
-            error_text = (
+            self.last_status = error.code
+            self.last_response = body
+
+            self.last_error = (
                 f"HTTP {error.code}: {body}"
             )
 
             print("")
             print("========================================")
             print("SUPABASE HTTP ERROR")
-            print(error_text)
+            print("STATUS:", error.code)
+            print("BODY:", body)
             print("========================================")
-
-            self.last_status = error.code
-            self.last_response = body
-            self.last_error = error_text
-
-            return []
-
-
-        except urllib.error.URLError as error:
-
-            error_text = (
-                f"URL ERROR: {error}"
-            )
-
-            print("")
-            print("========================================")
-            print("SUPABASE URL ERROR")
-            print(error_text)
-            print("========================================")
-
-            self.last_status = None
-            self.last_response = None
-            self.last_error = error_text
 
             return []
 
 
         except Exception as error:
 
-            error_text = (
+            self.last_status = None
+            self.last_response = None
+
+            self.last_error = (
                 f"{type(error).__name__}: {error}"
             )
 
             print("")
             print("========================================")
-            print("SUPABASE REQUEST ERROR")
-            print(error_text)
+            print("SUPABASE CONNECTION ERROR")
+            print(self.last_error)
             print("========================================")
 
-            self.last_status = None
-            self.last_response = None
-            self.last_error = error_text
-
             return []
-
-
-    # ============================================================
-    # GET EXISTING PLAYER SCORE
-    # ============================================================
-
-    async def get_player_score(
-        self,
-        name
-    ):
-
-        print("")
-        print("========================================")
-        print("CHECKING EXISTING PLAYER SCORE")
-        print("Player:", name)
-        print("========================================")
-
-        safe_name = urllib.parse.quote(
-            str(name),
-            safe=""
-        )
-
-        params = (
-            f"?name=eq.{safe_name}"
-            "&select=id,name,score,level,time"
-        )
-
-        result = await self.request(
-            "GET",
-            params=params
-        )
-
-        # Supabase SELECT should return a list.
-        if not isinstance(result, list):
-
-            print(
-                "Unexpected Supabase response type:",
-                type(result)
-            )
-
-            return None
-
-        if len(result) == 0:
-
-            print(
-                "No existing score found for:",
-                name
-            )
-
-            return None
-
-        # Find the best existing entry.
-        valid_rows = []
-
-        for row in result:
-
-            if not isinstance(row, dict):
-                continue
-
-            valid_rows.append(row)
-
-        if not valid_rows:
-
-            print(
-                "Supabase returned rows, but none "
-                "were dictionaries."
-            )
-
-            return None
-
-        best = max(
-            valid_rows,
-            key=lambda row: (
-                int(row.get("level", 0) or 0),
-                int(row.get("score", 0) or 0)
-            )
-        )
-
-        print("Existing best score:")
-        print(best)
-
-        return best
 
 
     # ============================================================
@@ -307,86 +230,64 @@ class LeaderboardManager:
     ):
 
         print("")
+        print("")
         print("########################################")
-        print("SUBMIT SCORE")
-        print("Name:", name)
-        print("Score:", score)
-        print("Level:", level)
+        print("STARTING SCORE SUBMISSION")
         print("########################################")
+        print("NAME:", name)
+        print("SCORE:", score)
+        print("LEVEL:", level)
 
         # --------------------------------------------------------
-        # Validate values
+        # Clean values
         # --------------------------------------------------------
 
-        try:
-
-            name = str(name).strip()
-            score = int(score)
-            level = int(level)
-
-        except Exception as error:
-
-            print(
-                "Invalid score data:",
-                error
-            )
-
-            return False
+        name = str(name).strip()
+        score = int(score)
+        level = int(level)
 
         if not name:
 
-            print(
-                "ERROR: Player name is empty."
-            )
-
-            return False
-
-        if score < 0:
-
-            print(
-                "ERROR: Score cannot be negative."
-            )
-
-            return False
-
-        if level < 1:
-
-            print(
-                "ERROR: Level must be at least 1."
-            )
-
+            print("ERROR: Empty player name.")
             return False
 
         # --------------------------------------------------------
-        # Check existing score
+        # STEP 1: Check whether player already exists
         # --------------------------------------------------------
 
-        existing = await self.get_player_score(
-            name
+        safe_name = urllib.parse.quote(
+            name,
+            safe=""
         )
 
-        # --------------------------------------------------------
-        # Generate timestamp
-        # --------------------------------------------------------
-
-        current_time = datetime.now(
-            timezone.utc
-        ).isoformat()
-
-        print(
-            "Timestamp:",
-            current_time
+        existing = await self.request(
+            "GET",
+            params=(
+                "?name=eq."
+                + safe_name
+                + "&select=id,name,score,level,time"
+            )
         )
 
+        print("")
+        print("EXISTING PLAYER RESULT:")
+        print(existing)
+
         # ========================================================
-        # NO EXISTING SCORE
+        # PLAYER DOES NOT EXIST
         # ========================================================
 
-        if existing is None:
+        if isinstance(existing, list) and len(existing) == 0:
 
             print("")
-            print("NO EXISTING SCORE.")
-            print("INSERTING NEW SCORE...")
+            print("PLAYER DOES NOT EXIST.")
+            print("ATTEMPTING POST...")
+
+            # Your current column is `timestamp` without timezone,
+            # so send a plain PostgreSQL-compatible timestamp.
+            current_time = datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
 
             payload = {
                 "name": name,
@@ -397,105 +298,114 @@ class LeaderboardManager:
 
             result = await self.request(
                 "POST",
-                data=payload
+                data=payload,
+                params=""
             )
+
+            print("")
+            print("POST RESULT:")
+            print(result)
 
             if (
                 self.last_status is not None
                 and
-                200 <= int(self.last_status) < 300
+                200 <= self.last_status < 300
             ):
 
                 print("")
                 print("########################################")
-                print("SUCCESS!")
-                print("NEW SCORE INSERTED INTO SUPABASE")
+                print("POST SUCCESS")
+                print("SCORE WAS INSERTED")
                 print("########################################")
 
                 return True
 
             print("")
             print("########################################")
-            print("INSERT FAILED")
-            print("Error:", self.last_error)
+            print("POST FAILED")
             print("########################################")
+            print("STATUS:", self.last_status)
+            print("ERROR:", self.last_error)
 
             return False
 
         # ========================================================
-        # EXISTING SCORE
+        # EXISTING PLAYER
         # ========================================================
 
-        try:
-
-            old_level = int(
-                existing.get("level", 0) or 0
-            )
-
-            old_score = int(
-                existing.get("score", 0) or 0
-            )
-
-        except Exception as error:
+        if not isinstance(existing, list):
 
             print(
-                "ERROR READING EXISTING SCORE:",
-                error
+                "ERROR: Unexpected GET response."
             )
 
             return False
 
+        if len(existing) == 0:
+
+            print(
+                "ERROR: Could not determine player state."
+            )
+
+            return False
+
+        old = existing[0]
+
+        old_score = int(
+            old.get("score", 0)
+        )
+
+        old_level = int(
+            old.get("level", 0)
+        )
+
         print("")
-        print("EXISTING SCORE FOUND")
-        print("Old level:", old_level)
-        print("Old score:", old_score)
-        print("New level:", level)
-        print("New score:", score)
+        print("PLAYER ALREADY EXISTS")
+        print("OLD SCORE:", old_score)
+        print("OLD LEVEL:", old_level)
 
         # --------------------------------------------------------
         # Determine whether new score is better
         # --------------------------------------------------------
 
-        better_level = (
-            level > old_level
-        )
+        better = False
 
-        same_level_better_score = (
+        if level > old_level:
+
+            better = True
+
+        elif (
             level == old_level
-            and
-            score > old_score
-        )
-
-        if not (
-            better_level
-            or
-            same_level_better_score
+            and score > old_score
         ):
 
-            print("")
-            print(
-                "NEW SCORE IS NOT BETTER."
-            )
+            better = True
 
-            print(
-                "Keeping existing leaderboard entry."
-            )
+        if not better:
+
+            print("")
+            print("NEW SCORE IS NOT BETTER.")
+            print("NOTHING WILL BE UPDATED.")
 
             return False
 
-        # ========================================================
-        # UPDATE EXISTING SCORE
-        # ========================================================
+        # --------------------------------------------------------
+        # UPDATE
+        # --------------------------------------------------------
 
-        row_id = existing.get("id")
+        row_id = old.get("id")
 
         if row_id is None:
 
             print(
-                "ERROR: Existing score has no ID."
+                "ERROR: Existing row has no ID."
             )
 
             return False
+
+        current_time = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
 
         payload = {
             "name": name,
@@ -505,83 +415,88 @@ class LeaderboardManager:
         }
 
         print("")
-        print("NEW SCORE IS BETTER!")
-        print("UPDATING SUPABASE ROW...")
-        print("Row ID:", row_id)
-
-        params = (
-            f"?id=eq.{urllib.parse.quote(str(row_id))}"
-        )
+        print("NEW SCORE IS BETTER.")
+        print("ATTEMPTING PATCH...")
+        print("ROW ID:", row_id)
 
         result = await self.request(
             "PATCH",
             data=payload,
-            params=params
+            params=(
+                "?id=eq."
+                + urllib.parse.quote(
+                    str(row_id),
+                    safe=""
+                )
+            )
         )
+
+        print("")
+        print("PATCH RESULT:")
+        print(result)
 
         if (
             self.last_status is not None
             and
-            200 <= int(self.last_status) < 300
+            200 <= self.last_status < 300
         ):
 
             print("")
             print("########################################")
-            print("SUCCESS!")
-            print("SCORE UPDATED IN SUPABASE")
+            print("PATCH SUCCESS")
+            print("SCORE WAS UPDATED")
             print("########################################")
 
             return True
 
         print("")
         print("########################################")
-        print("UPDATE FAILED")
-        print("Error:", self.last_error)
+        print("PATCH FAILED")
         print("########################################")
+        print("STATUS:", self.last_status)
+        print("ERROR:", self.last_error)
 
         return False
 
 
     # ============================================================
-    # GET TOP 10 SCORES
+    # TOP 10
     # ============================================================
 
     async def get_top_scores(self):
 
         print("")
         print("========================================")
-        print("GET TOP 10 SCORES")
+        print("GETTING TOP SCORES")
         print("========================================")
 
-        params = (
-            "?select=id,name,score,level,time"
-            "&order=level.desc,score.desc"
-            "&limit=10"
-        )
-
-        scores = await self.request(
+        result = await self.request(
             "GET",
-            params=params
+            params=(
+                "?select=id,name,score,level,time"
+                "&order=level.desc,score.desc"
+                "&limit=10"
+            )
         )
 
-        if not isinstance(scores, list):
+        if not isinstance(result, list):
 
             print(
-                "ERROR: Expected leaderboard list."
+                "ERROR: Leaderboard response is not a list."
             )
 
             return []
 
         print(
-            "Leaderboard entries:",
-            len(scores)
+            "TOP SCORES RECEIVED:",
+            len(result)
         )
 
-        return scores
+        return result
 
 
     # ============================================================
-    # GET PLAYER RANK
+    # PLAYER RANK
     # ============================================================
 
     async def get_player_rank(
@@ -591,47 +506,46 @@ class LeaderboardManager:
 
         print("")
         print("========================================")
-        print("GET PLAYER RANK")
-        print("Player:", name)
+        print("GETTING PLAYER RANK")
+        print("PLAYER:", name)
         print("========================================")
 
-        params = (
-            "?select=id,name,score,level,time"
-            "&order=level.desc,score.desc"
-        )
-
-        players = await self.request(
+        result = await self.request(
             "GET",
-            params=params
+            params=(
+                "?select=id,name,score,level,time"
+                "&order=level.desc,score.desc"
+            )
         )
 
-        if not isinstance(players, list):
+        if not isinstance(result, list):
 
             print(
-                "ERROR: Expected player list."
+                "ERROR: Rank response is not a list."
             )
 
             return None, None
 
         for index, player in enumerate(
-            players,
+            result,
             start=1
         ):
 
-            if not isinstance(player, dict):
-                continue
-
-            if player.get("name") == name:
+            if (
+                isinstance(player, dict)
+                and
+                player.get("name") == name
+            ):
 
                 print(
-                    "Player rank:",
+                    "PLAYER RANK:",
                     index
                 )
 
                 return index, player
 
         print(
-            "Player not found on leaderboard."
+            "PLAYER NOT FOUND IN LEADERBOARD"
         )
 
         return None, None
