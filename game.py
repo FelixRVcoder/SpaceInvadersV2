@@ -107,7 +107,7 @@ class Game:
 
         self.last_enemy_shot = pygame.time.get_ticks()
 
-        self.enemy_shot_delay = 1500
+        self.enemy_shot_delay = INVADER_COOLDOWN
 
     # ==========================================
     # RESET GAME

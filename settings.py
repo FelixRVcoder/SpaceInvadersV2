@@ -65,6 +65,7 @@ USER_BULLET_SPEED = 10
 INVADER_BULLET_SPEED = 6
 
 COOLDOWN = 333
+INVADER_COOLDOWN = 1000
 
 # ===========================================
 # Shields
