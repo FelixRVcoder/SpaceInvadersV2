@@ -65,8 +65,8 @@ class LeaderboardManager:
             # ----------------------------------------------------
             # IMPORTANT:
             #
-            # We put the API key in the URL because your previous
-            # successful Pygbag request showed that this works.
+            # Put the API key in the URL because previous
+            # successful Pygbag requests showed that this works.
             # ----------------------------------------------------
 
             separator = "&" if "?" in params else "?"
